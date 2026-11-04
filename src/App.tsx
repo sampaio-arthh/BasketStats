@@ -14,6 +14,7 @@ import { Summary } from './components/Summary';
 import {
   downloadBackup,
   importBackup,
+  mergeSessions,
   readSessions,
   writeSessions,
 } from './lib/storage';
@@ -54,9 +55,7 @@ export default function App() {
     return (
       session.type === 'training' &&
       session.trainingType === 'shooting' &&
-      session.shootingType === (
-        view === 'ft' ? 'FT' : '3PT'
-      )
+      session.shootingType === (view === 'ft' ? 'FT' : '3PT')
     );
   };
 
@@ -68,11 +67,14 @@ export default function App() {
             matchesView(session) &&
             session.title
               .toLocaleLowerCase('pt-BR')
-              .includes(
-                query.toLocaleLowerCase('pt-BR'),
-              ),
+              .includes(query.toLocaleLowerCase('pt-BR')),
         )
-        .sort((a, b) => b.date.localeCompare(a.date)),
+        .sort((a, b) => {
+          const dateComparison = b.date.localeCompare(a.date);
+          return dateComparison !== 0
+            ? dateComparison
+            : b.createdAt.localeCompare(a.createdAt);
+        }),
     [sessions, view, query],
   );
 
@@ -92,9 +94,7 @@ export default function App() {
       return (
         session.type === 'training' &&
         session.trainingType === 'shooting' &&
-        session.shootingType === (
-          target === 'ft' ? 'FT' : '3PT'
-        )
+        session.shootingType === (target === 'ft' ? 'FT' : '3PT')
       );
     }).length;
 
@@ -108,6 +108,7 @@ export default function App() {
       {
         ...draft,
         id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
       },
       ...sessions,
     ]);
@@ -116,19 +117,10 @@ export default function App() {
   };
 
   const remove = (id: string) => {
-    const item = sessions.find(
-      (session) => session.id === id,
-    );
+    const item = sessions.find((session) => session.id === id);
 
-    if (
-      item &&
-      window.confirm(`Excluir “${item.title}”?`)
-    ) {
-      commit(
-        sessions.filter(
-          (session) => session.id !== id,
-        ),
-      );
+    if (item && window.confirm(`Excluir “${item.title}”?`)) {
+      commit(sessions.filter((session) => session.id !== id));
     }
   };
 
@@ -142,16 +134,36 @@ export default function App() {
     }
 
     try {
-      const imported = await importBackup(file);
+      const result = await importBackup(file);
+      const { summary } = result;
+      const description = [
+        `${summary.total} sessões encontradas`,
+        `${summary.free} treinos livres`,
+        `${summary.ft} treinos FT`,
+        `${summary.three} treinos 3PT`,
+        `${summary.games} jogos`,
+      ].join('\n');
+
+      const shouldMerge = window.confirm(
+        `${description}\n\n` +
+        'Clique em OK para MESCLAR com os dados atuais.\n' +
+        'Clique em Cancelar para escolher entre substituir ou desistir.',
+      );
+
+      if (shouldMerge) {
+        commit(mergeSessions(sessions, result.sessions));
+        window.alert('Backup mesclado com sucesso.');
+        return;
+      }
 
       const shouldReplace = window.confirm(
-        `O arquivo contém ${imported.length} sessões. ` +
-        'Deseja substituir os dados atuais?',
+        'Deseja SUBSTITUIR todos os dados atuais pelo backup?\n\n' +
+        'OK: substituir.\nCancelar: não importar.',
       );
 
       if (shouldReplace) {
-        commit(imported);
-        window.alert('Backup importado com sucesso.');
+        commit(result.sessions);
+        window.alert('Dados substituídos com sucesso.');
       }
     } catch (error) {
       window.alert(
@@ -179,32 +191,25 @@ export default function App() {
         </div>
 
         <nav aria-label="Tipos de sessão">
-          <span className="nav-heading">
-            TREINOS
-          </span>
+          <span className="nav-heading">TREINOS</span>
 
-          {(['free', 'ft', 'three'] as ViewType[]).map(
-            (item) => (
-              <button
-                type="button"
-                key={item}
-                className={view === item ? 'active' : ''}
-                onClick={() => setView(item)}
-              >
-                {item === 'free'
-                  ? 'Livre'
-                  : item === 'ft'
-                    ? 'Arremessos FT'
-                    : 'Arremessos 3PT'}
+          {(['free', 'ft', 'three'] as ViewType[]).map((item) => (
+            <button
+              type="button"
+              key={item}
+              className={view === item ? 'active' : ''}
+              onClick={() => setView(item)}
+            >
+              {item === 'free'
+                ? 'Livre'
+                : item === 'ft'
+                  ? 'Arremessos FT'
+                  : 'Arremessos 3PT'}
+              <span>{count(item)}</span>
+            </button>
+          ))}
 
-                <span>{count(item)}</span>
-              </button>
-            ),
-          )}
-
-          <span className="nav-heading nav-heading--games">
-            JOGOS
-          </span>
+          <span className="nav-heading nav-heading--games">JOGOS</span>
 
           <button
             type="button"
@@ -215,24 +220,16 @@ export default function App() {
             <span>{count('game')}</span>
           </button>
 
-          <span className="nav-heading nav-heading--tools">
-            FERRAMENTAS
-          </span>
+          <span className="nav-heading nav-heading--tools">FERRAMENTAS</span>
 
-          <button
-            type="button"
-            onClick={() => setCounterType('FT')}
-          >
+          <button type="button" onClick={() => setCounterType('FT')}>
             <span className="nav-tool-label">
               <Target size={17} />
               Contador FT
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setCounterType('3PT')}
-          >
+          <button type="button" onClick={() => setCounterType('3PT')}>
             <span className="nav-tool-label">
               <Target size={17} />
               Contador 3PT
@@ -247,7 +244,7 @@ export default function App() {
             onClick={() => downloadBackup(sessions)}
           >
             <Download size={17} />
-            Exportar CSV
+            Exportar JSON
           </button>
 
           <button
@@ -256,35 +253,27 @@ export default function App() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload size={17} />
-            Importar CSV
+            Importar JSON
           </button>
 
           <input
             ref={fileInputRef}
             className="backup-input"
             type="file"
-            accept=".csv,text/csv"
+            accept=".json,application/json"
             onChange={handleImport}
           />
 
-          <p>
-            Exporte um backup antes de limpar os dados do navegador.
-          </p>
+          <p>Exporte um backup antes de limpar os dados do navegador.</p>
         </div>
       </aside>
 
       <main>
         <header className="page-header">
           <div>
-            <span className="eyebrow">
-              PAINEL DE DESEMPENHO
-            </span>
-
+            <span className="eyebrow">PAINEL DE DESEMPENHO</span>
             <h1>{viewLabels[view]}</h1>
-
-            <p>
-              Acompanhe volume, eficiência e evolução em cada sessão.
-            </p>
+            <p>Acompanhe volume, eficiência e evolução em cada sessão.</p>
           </div>
 
           <button
@@ -297,7 +286,7 @@ export default function App() {
           </button>
         </header>
 
-        <Summary items={visible} />
+        <Summary items={visible} view={view} />
 
         <section className="history">
           <div className="history-head">
@@ -308,12 +297,9 @@ export default function App() {
 
             <label className="search">
               <Search size={18} />
-
               <input
                 value={query}
-                onChange={(event) =>
-                  setQuery(event.target.value)
-                }
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Buscar sessão"
                 aria-label="Buscar sessão"
               />
@@ -334,11 +320,7 @@ export default function App() {
             <div className="empty">
               <div>🏀</div>
               <h3>Nenhuma sessão encontrada</h3>
-
-              <p>
-                Registre uma sessão para começar a acompanhar as estatísticas.
-              </p>
-
+              <p>Registre uma sessão para começar a acompanhar as estatísticas.</p>
               <button
                 type="button"
                 className="button primary"
