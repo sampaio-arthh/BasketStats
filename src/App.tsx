@@ -1,21 +1,25 @@
-import { useMemo, useState } from 'react';
+import {
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Activity,
   Download,
   Plus,
   Search,
+  Upload,
 } from 'lucide-react';
 
 import { SessionCard } from './components/SessionCard';
 import { SessionForm } from './components/SessionForm';
 import { Summary } from './components/Summary';
-
 import {
   downloadBackup,
+  importBackup,
   readSessions,
   writeSessions,
 } from './lib/storage';
-
 import type {
   Session,
   SessionDraft,
@@ -27,6 +31,7 @@ export default function App() {
   const [type, setType] = useState<SessionType>('training');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const visible = useMemo(
     () =>
@@ -66,24 +71,50 @@ export default function App() {
   };
 
   const remove = (id: string) => {
-    const item = sessions.find(
-      (session) => session.id === id,
-    );
+    const item = sessions.find((session) => session.id === id);
 
     if (!item) {
       return;
     }
 
-    const shouldDelete = window.confirm(
-      `Excluir “${item.title}”?`,
-    );
+    if (window.confirm(`Excluir “${item.title}”?`)) {
+      commit(sessions.filter((session) => session.id !== id));
+    }
+  };
 
-    if (shouldDelete) {
-      commit(
-        sessions.filter(
-          (session) => session.id !== id,
-        ),
+  const selectBackupFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImport = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const importedSessions = await importBackup(file);
+      const shouldReplace = window.confirm(
+        `O arquivo contém ${importedSessions.length} sessões. ` +
+          'Deseja substituir os dados atuais pelo backup importado?',
       );
+
+      if (shouldReplace) {
+        commit(importedSessions);
+        window.alert('Backup importado com sucesso.');
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível importar o arquivo.';
+
+      window.alert(message);
+    } finally {
+      event.target.value = '';
     }
   };
 
@@ -128,10 +159,29 @@ export default function App() {
             onClick={() => downloadBackup(sessions)}
           >
             <Download size={17} />
-            Exportar backup
+            Exportar CSV
           </button>
 
-          <p>Dados salvos somente neste navegador.</p>
+          <button
+            type="button"
+            className="button ghost full"
+            onClick={selectBackupFile}
+          >
+            <Upload size={17} />
+            Importar CSV
+          </button>
+
+          <input
+            ref={fileInputRef}
+            className="backup-input"
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleImport}
+          />
+
+          <p>
+            Exporte um backup antes de limpar os dados do navegador.
+          </p>
         </div>
       </aside>
 
@@ -177,9 +227,7 @@ export default function App() {
 
               <input
                 value={query}
-                onChange={(event) =>
-                  setQuery(event.target.value)
-                }
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Buscar sessão"
                 aria-label="Buscar sessão"
               />
@@ -199,7 +247,6 @@ export default function App() {
           ) : (
             <div className="empty">
               <div>🏀</div>
-
               <h3>Nenhuma sessão encontrada</h3>
 
               <p>
