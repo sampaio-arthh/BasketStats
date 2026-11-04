@@ -7,7 +7,6 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-
   color: #f5f8fc;
   background: #0b121b;
   font-synthesis: none;
@@ -978,4 +977,23 @@ nav button span {
   .stats-grid--shooting {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+
+.summary__best-session {
+  margin: 20px 0 0;
+  color: #dcecff;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.form-error {
+  margin: 0;
+  padding: 11px 13px;
+  color: #ffd9dc;
+  background: #7a1f2a;
+  border: 1px solid #ff7780;
+  border-radius: 10px;
+  font-size: 13px;
 }
