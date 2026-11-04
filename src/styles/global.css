@@ -724,3 +724,215 @@ nav button span {
     font-size: 14px;
   }
 }
+
+/* =========================
+   Atualização: tipos de treino e contador
+   ========================= */
+
+.summary__title h2 {
+  font-size: clamp(30px, 3.2vw, 42px);
+  font-weight: 950;
+  letter-spacing: 0.01em;
+}
+
+.nav-heading {
+  margin: 10px 12px 3px;
+  color: #68a9ff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.nav-heading--games {
+  margin-top: 21px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(9, 1fr);
+}
+
+.stats-grid--shooting {
+  grid-template-columns: repeat(2, minmax(120px, 220px));
+  justify-content: center;
+}
+
+.session-stats--five {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.shot-result {
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  border-radius: 14px;
+  background: #0d1722;
+}
+
+.shot-result strong {
+  color: #ffffff;
+  font-size: 34px;
+}
+
+.shot-result span {
+  color: #68a9ff;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.shot-counter {
+  width: min(560px, 100%);
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 28px 90px #000;
+}
+
+.shot-counter header,
+.shot-counter footer {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.shot-counter header {
+  border-bottom: 1px solid var(--line);
+}
+
+.shot-counter header span {
+  color: #68a9ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.shot-counter h2 {
+  margin: 4px 0 0;
+  font-size: 28px;
+}
+
+.counter-result {
+  padding: 40px 24px 24px;
+  display: grid;
+  place-items: center;
+}
+
+.counter-result strong {
+  color: #ffffff;
+  font-size: clamp(64px, 12vw, 96px);
+  line-height: 1;
+}
+
+.counter-result span {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.counter-actions {
+  padding: 10px 24px 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.counter-button {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffffff;
+  border: 0;
+  border-radius: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.counter-button svg {
+  width: 32px;
+  height: 32px;
+}
+
+.counter-button.made {
+  background: #178851;
+}
+
+.counter-button.missed {
+  background: #c43946;
+}
+
+.shot-counter footer {
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1100px) {
+  .stats-grid {
+    grid-template-columns: repeat(5, 1fr);
+    row-gap: 20px;
+  }
+}
+
+@media (max-width: 950px) {
+  .sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .nav-heading {
+    display: none;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .page-header {
+    display: block;
+  }
+
+  .header-actions {
+    margin-top: 18px;
+  }
+
+  .header-actions .button {
+    flex: 1;
+  }
+
+  .page-header > .button {
+    position: static;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .summary__title h2 {
+    font-size: 30px;
+  }
+
+  .session-stats--five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .counter-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
