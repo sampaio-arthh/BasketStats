@@ -4,6 +4,7 @@ export type ShootingType = 'FT' | '3PT';
 
 export interface Session {
   id: string;
+  createdAt: string;
   type: SessionType;
   trainingType: TrainingType;
   shootingType: ShootingType | null;
@@ -24,5 +25,25 @@ export interface Session {
   notes: string;
 }
 
-export type SessionDraft = Omit<Session, 'id'>;
+export type SessionDraft = Omit<Session, 'id' | 'createdAt'>;
 export type ViewType = 'free' | 'ft' | 'three' | 'game';
+
+export interface BasketStatsBackup {
+  format: 'basketstats-backup';
+  version: 3;
+  exportedAt: string;
+  sessions: Session[];
+}
+
+export interface ImportSummary {
+  total: number;
+  free: number;
+  ft: number;
+  three: number;
+  games: number;
+}
+
+export interface ImportResult {
+  sessions: Session[];
+  summary: ImportSummary;
+}
