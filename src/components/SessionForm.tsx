@@ -29,9 +29,13 @@ export function SessionForm({
   onSave: (draft: SessionDraft) => void;
 }) {
   const [draft, setDraft] = useState(() => emptySession(view));
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (open) setDraft(emptySession(view));
+    if (open) {
+      setDraft(emptySession(view));
+      setError('');
+    }
   }, [open, view]);
 
   if (!open) return null;
@@ -40,28 +44,69 @@ export function SessionForm({
   const shootingFields = view === 'ft'
     ? ([['ftMade', 'Acertos'], ['ftAttempted', 'Tentativas']] as const)
     : ([['threeMade', 'Acertos'], ['threeAttempted', 'Tentativas']] as const);
+  const fields = isShooting ? shootingFields : commonFields;
+
   const update = <Key extends keyof SessionDraft>(
     key: Key,
     value: SessionDraft[Key],
-  ) => setDraft((current) => ({ ...current, [key]: value }));
-  const fields = isShooting ? shootingFields : commonFields;
+  ) => {
+    setDraft((current) => ({ ...current, [key]: value }));
+    setError('');
+  };
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!draft.title.trim()) return;
-    onSave({ ...draft, title: draft.title.trim() });
+
+    if (!draft.title.trim()) {
+      setError('Informe um nome para a sessão.');
+      return;
+    }
+
+    if (isShooting) {
+      const made = view === 'ft'
+        ? draft.ftMade
+        : draft.threeMade;
+      const attempted = view === 'ft'
+        ? draft.ftAttempted
+        : draft.threeAttempted;
+
+      if (attempted === 0) {
+        setError('Informe pelo menos uma tentativa.');
+        return;
+      }
+
+      if (made > attempted) {
+        setError('Os acertos não podem ser maiores que as tentativas.');
+        return;
+      }
+    }
+
+    onSave({
+      ...draft,
+      title: draft.title.trim(),
+    });
   };
 
   return (
-    <div className="modal-backdrop" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <form className="modal" onSubmit={submit}>
         <header>
           <div>
             <span>NOVA SESSÃO</span>
-            <h2>{isShooting ? `Treino de ${view === 'ft' ? 'FT' : '3PT'}` : view === 'game' ? 'Registrar jogo' : 'Treino livre'}</h2>
+            <h2>
+              {isShooting
+                ? `Treino de ${view === 'ft' ? 'FT' : '3PT'}`
+                : view === 'game'
+                  ? 'Registrar jogo'
+                  : 'Treino livre'}
+            </h2>
           </div>
+
           <button type="button" className="icon-button" onClick={onClose}>
             <X />
           </button>
@@ -75,7 +120,11 @@ export function SessionForm({
               required
               value={draft.title}
               onChange={(event) => update('title', event.target.value)}
-              placeholder={isShooting ? 'Ex.: 100 lances livres' : 'Ex.: Treino de fundamentos'}
+              placeholder={
+                isShooting
+                  ? 'Ex.: 100 lances livres'
+                  : 'Ex.: Treino de fundamentos'
+              }
             />
           </label>
 
@@ -125,6 +174,12 @@ export function SessionForm({
               placeholder="Observações da sessão..."
             />
           </label>
+
+          {error && (
+            <p className="form-error wide" role="alert">
+              {error}
+            </p>
+          )}
         </div>
 
         <footer>
